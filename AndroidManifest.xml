@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+      android:versionCode="9"
+      android:versionName="2.0.1" package="jp.ozero_currentdir_rgfx.colourLwp0">
+      
+      <uses-sdk android:minSdkVersion="7" />
+      
+      <uses-feature android:name="android.software.live_wallpaper" />
+      
+    <application android:icon="@drawable/icon" android:label="@string/app_name">
+    	
+    	<!-- Live Wallpaper Service -->
+    	<service
+            android:name="LiveWallpaperTemplate"
+			android:enabled="true"
+			android:icon="@drawable/icon"
+			android:label="@string/app_name"
+			android:permission="android.permission.BIND_WALLPAPER">
+            <intent-filter>
+                <action android:name="android.service.wallpaper.WallpaperService" />
+            </intent-filter>
+            <meta-data
+            	android:name="android.service.wallpaper" 
+            	android:resource="@xml/wallpaper" />
+        </service>
+        
+        <!-- Live Wallpaper Settings Activity -->
+        <activity
+        	android:label="@string/wallpaper_settings"
+        	android:name="LiveWallpaperTemplateSettings"
+        	android:theme="@android:style/Theme.Light.WallpaperSettings"
+        	android:exported="true">
+        </activity>
+        
+    </application>
+
+</manifest> 
