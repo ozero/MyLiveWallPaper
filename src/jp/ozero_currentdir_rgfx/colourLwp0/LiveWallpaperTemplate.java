@@ -95,10 +95,10 @@ public class LiveWallpaperTemplate
 		
 		// Set the Base Texture Path
 		TextureRegionFactory.setAssetBasePath("gfx/");
-		this.mTexture = new Texture(32, 32, TextureOptions.BILINEAR);
+		this.mTexture = new Texture(128, 128, TextureOptions.DEFAULT);
 
 		this.mFaceTextureRegion = TextureRegionFactory.createFromAsset(
-				this.mTexture, this, "face_box.png", 0, 0);
+				this.mTexture, this, "tks128.png", 0, 0);
 		
 		// </customize-here>
 		
@@ -113,19 +113,22 @@ public class LiveWallpaperTemplate
 		
 		final Scene scene = new Scene(1);
 		
-		scene.setBackground(new ColorBackground(0.09804f, 0.6274f, 0.8784f));
+		scene.setBackground(new ColorBackground(
+				254f/256f,
+				236f/256f,
+				255f/255f));
 		final ParticleSystem particleSystem = new ParticleSystem(
-				0,CAMERA_HEIGHT, 0, 0, 1, 4, 
+				CAMERA_WIDTH/2*(-1),CAMERA_HEIGHT, 0, 0, 1, 4, 
 				50, this.mFaceTextureRegion);
 
 		particleSystem.addParticleInitializer(new VelocityInitializer(
-				20, 30,-80, -120));
+				20, 50,-80, -200));
 		particleSystem.addParticleInitializer(new AccelerationInitializer(
 				10,20));
 		particleSystem.addParticleInitializer(new RotationInitializer(
 				0.0f,360.0f));
 
-		particleSystem.addParticleModifier(new ScaleModifier(1.0f, 2.0f, 0, 5));
+		particleSystem.addParticleModifier(new ScaleModifier(0.25f, 1.0f, 0, 5));
 		particleSystem.addParticleModifier(new ExpireModifier(12, 12));
 
 		scene.getTopLayer().addEntity(particleSystem);
