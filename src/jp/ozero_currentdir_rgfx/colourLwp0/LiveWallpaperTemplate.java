@@ -4,18 +4,33 @@ import org.anddev.andengine.engine.camera.Camera;
 import org.anddev.andengine.engine.options.EngineOptions;
 import org.anddev.andengine.engine.options.EngineOptions.ScreenOrientation;
 import org.anddev.andengine.engine.options.resolutionpolicy.FillResolutionPolicy;
+import org.anddev.andengine.entity.particle.ParticleSystem;
+import org.anddev.andengine.entity.particle.modifier.AccelerationInitializer;
+import org.anddev.andengine.entity.particle.modifier.ExpireModifier;
+import org.anddev.andengine.entity.particle.modifier.RotationInitializer;
+import org.anddev.andengine.entity.particle.modifier.ScaleModifier;
+import org.anddev.andengine.entity.particle.modifier.VelocityInitializer;
 import org.anddev.andengine.entity.scene.Scene;
 import org.anddev.andengine.entity.scene.background.ColorBackground;
 import org.anddev.andengine.extension.ui.livewallpaper.BaseLiveWallpaperService;
+import org.anddev.andengine.opengl.texture.Texture;
+import org.anddev.andengine.opengl.texture.TextureOptions;
+import org.anddev.andengine.opengl.texture.region.TextureRegion;
 import org.anddev.andengine.opengl.texture.region.TextureRegionFactory;
 import org.anddev.andengine.opengl.view.RenderSurfaceView;
 
 import android.app.WallpaperManager;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.DisplayMetrics;
+import android.view.Display;
+import android.view.MotionEvent;
+import android.view.WindowManager;
 
-public class LiveWallpaperTemplate extends BaseLiveWallpaperService implements
-		SharedPreferences.OnSharedPreferenceChangeListener {
+public class LiveWallpaperTemplate 
+	extends BaseLiveWallpaperService 
+	implements SharedPreferences.OnSharedPreferenceChangeListener {
 	// ===========================================================
 	// Constants
 	// ===========================================================
@@ -23,8 +38,8 @@ public class LiveWallpaperTemplate extends BaseLiveWallpaperService implements
 	public static final String SHARED_PREFS_NAME = "livewallpapertemplatesettings";
 
 	// Camera Constants
-	private static final int CAMERA_WIDTH = 480;
-	private static final int CAMERA_HEIGHT = 720;
+	private static int CAMERA_WIDTH = 720;
+	private static int CAMERA_HEIGHT = 480;
 
 	// ===========================================================
 	// Fields
@@ -34,6 +49,9 @@ public class LiveWallpaperTemplate extends BaseLiveWallpaperService implements
 	@SuppressWarnings("unused")
 	private SharedPreferences mSharedPreferences;
 	private IOffsetsChanged pOffsetsChangedListener;
+	private Texture mTexture;
+	private TextureRegion mFaceTextureRegion;
+	private Camera mCamera;
 
 	// ===========================================================
 	// Constructors
@@ -49,47 +67,92 @@ public class LiveWallpaperTemplate extends BaseLiveWallpaperService implements
 
 	@Override
 	public org.anddev.andengine.engine.Engine onLoadEngine() {
-		Camera mCamera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
+		// get screen size
+		WindowManager windowManager = 
+			(WindowManager) getSystemService(Context.WINDOW_SERVICE);
+		Display display = windowManager.getDefaultDisplay();
+		DisplayMetrics displayMetrics = new DisplayMetrics();
+		display.getMetrics(displayMetrics);
+		int height = displayMetrics.heightPixels;
+		int width = displayMetrics.widthPixels;
+//		int mini = (height < width)?height:width;
+//		int dpi = displayMetrics.densityDpi;
+		CAMERA_WIDTH = width;
+		CAMERA_HEIGHT = height;
+		
+		// init cam
+		mCamera = new Camera(0, 0, CAMERA_WIDTH, CAMERA_HEIGHT);
 		return new org.anddev.andengine.engine.Engine(
 				new EngineOptions(true, ScreenOrientation.PORTRAIT,
 						new FillResolutionPolicy(), mCamera));
 	}
 
+	
 	@Override
 	public void onLoadResources() {
+		
+		// <customize-here>
+		
 		// Set the Base Texture Path
 		TextureRegionFactory.setAssetBasePath("gfx/");
+		this.mTexture = new Texture(32, 32, TextureOptions.BILINEAR);
+
+		this.mFaceTextureRegion = TextureRegionFactory.createFromAsset(
+				this.mTexture, this, "face_box.png", 0, 0);
+		
+		// </customize-here>
+		
+		this.mEngine.getTextureManager().loadTexture(this.mTexture);
 	}
 
+	
 	@Override
 	public Scene onLoadScene() {
+		
+		// <customize-here>
+		
 		final Scene scene = new Scene(1);
-		scene.setBackground(new ColorBackground(0.0f, 0.0f, 0.0f));
-		//ready to go :)
+		
+		scene.setBackground(new ColorBackground(0.09804f, 0.6274f, 0.8784f));
+		final ParticleSystem particleSystem = new ParticleSystem(
+				0,CAMERA_HEIGHT, 0, 0, 1, 4, 
+				50, this.mFaceTextureRegion);
 
+		particleSystem.addParticleInitializer(new VelocityInitializer(
+				20, 30,-80, -120));
+		particleSystem.addParticleInitializer(new AccelerationInitializer(
+				10,20));
+		particleSystem.addParticleInitializer(new RotationInitializer(
+				0.0f,360.0f));
+
+		particleSystem.addParticleModifier(new ScaleModifier(1.0f, 2.0f, 0, 5));
+		particleSystem.addParticleModifier(new ExpireModifier(12, 12));
+
+		scene.getTopLayer().addEntity(particleSystem);
+		
+		// </customize-here>
+		
 		return scene;
 	}
 
 	@Override
 	public void onLoadComplete() {
-
 	}
+	
 
 	@Override
 	protected void onTap(final int pX, final int pY) {
-
 	}
 
 	@Override
-	public void onSharedPreferenceChanged(SharedPreferences pSharedPrefs,
+	public void onSharedPreferenceChanged(
+			SharedPreferences pSharedPrefs,
 			String pKey) {
-
 	}
 
-	//fix from : by Kangee » Mon Aug 30, 2010 10:39 pm
+	// fix from : by Kangee » Mon Aug 30, 2010 10:39 pm
 	@Override
 	public Engine onCreateEngine() {
-		// TODO Auto-generated method stub
 		return new MyBaseWallpaperGLEngine(pOffsetsChangedListener);
 	}
 
@@ -101,11 +164,13 @@ public class LiveWallpaperTemplate extends BaseLiveWallpaperService implements
 	// Inner and Anonymous Classes
 	// ===========================================================
 
-	//fix from : by Kangee » Mon Aug 30, 2010 10:39 pm
-	/* I also create a Interface IOffsetsChanged (you see it in the constructor) 
-	 * in LiveWallpaperTemplate class 
-	 * (if you used Mimminito Live-Wallpaper-Template) 
-	 * and i override the onCreateEngine method in LiveWallpaperTemplate. */	
+	// fix from : by Kangee » Mon Aug 30, 2010 10:39 pm
+	/*
+	 * I also create a Interface IOffsetsChanged (you see it in the constructor)
+	 * in LiveWallpaperTemplate class (if you used Mimminito
+	 * Live-Wallpaper-Template) and i override the onCreateEngine method in
+	 * LiveWallpaperTemplate.
+	 */
 	public interface IOffsetsChanged {
 
 		public void offsetsChanged(float xOffset, float yOffset,
@@ -114,25 +179,24 @@ public class LiveWallpaperTemplate extends BaseLiveWallpaperService implements
 
 	}
 
-	//fix from : by Kangee » Mon Aug 30, 2010 10:39 pm
-	//http://www.andengine.org/forums/live-wallpaper
+	// fix from : by Kangee » Mon Aug 30, 2010 10:39 pm
+	// http://www.andengine.org/forums/live-wallpaper
 	// -extension/how-wallpaper-scroll-along-with-homescreen-t444.html
-	
-	/*  the BaseWallpaperGLEngine class in the BaseLiveWallpaperService. 
-	 * To scroll along with the homescreen we need to implement 
-	 * the onOffsetsChanged() method. 
-	 * So i implement my own Version of BaseWallpaperGLEngine 
-	 * (copy the old stuff and extend it with the onOffsetsChanged() method): */
+
+	/*
+	 * the BaseWallpaperGLEngine class in the BaseLiveWallpaperService. To
+	 * scroll along with the homescreen we need to implement the
+	 * onOffsetsChanged() method. So i implement my own Version of
+	 * BaseWallpaperGLEngine (copy the old stuff and extend it with the
+	 * onOffsetsChanged() method):
+	 */
 	protected class MyBaseWallpaperGLEngine extends GLEngine {
 		// ===========================================================
 		// Fields
 		// ===========================================================
 
 		private org.anddev.andengine.opengl.view.GLSurfaceView.Renderer mRenderer;
-
 		private IOffsetsChanged mOffsetsChangedListener = null;
-		//private Camera mCamera;
-
 
 		// ===========================================================
 		// Constructors
@@ -188,33 +252,37 @@ public class LiveWallpaperTemplate extends BaseLiveWallpaperService implements
 			this.mRenderer = null;
 		}
 
-		//fix from : by Kangee » Mon Aug 30, 2010 10:39 pm
+		// fix from : by Kangee » Mon Aug 30, 2010 10:39 pm
 		@Override
 		public void onOffsetsChanged(float xOffset, float yOffset,
-				float xOffsetStep, float yOffsetStep, int xPixelOffset,
-				int yPixelOffset) {
-			
+			float xOffsetStep, float yOffsetStep,
+			int xPixelOffset,int yPixelOffset) {
+
 			super.onOffsetsChanged(xOffset, yOffset, xOffsetStep, yOffsetStep,
 					xPixelOffset, yPixelOffset);
 
 			if (this.mOffsetsChangedListener != null)
 				this.mOffsetsChangedListener.offsetsChanged(xOffset, yOffset,
 						xOffsetStep, yOffsetStep, xPixelOffset, yPixelOffset);
-
-			/* Now we get a callback if the user scroll. 
-			 * But we have to scroll our camera with 
-			 * and the solution for this problem is: */
-//			if (mCamera != null) {
-//				mCamera.setCenter(
-//					((mCamera.getWidth() * (screensCount-1)) * xOffset )
-//						- (mCamera.getWidth() / 2) ,
-//					mCamera.getCenterY()
-//				);
-//			}		
 			
+			
+			/*
+			 * Now we get a callback if the user scroll. But we have to scroll
+			 * our camera with and the solution for this problem is:
+			 */
+			if (mCamera != null) {
+				mCamera.setCenter(
+					mCamera.getWidth() * xOffset * 0.25f+
+					mCamera.getWidth() * xOffset * 0.5f ,
+					mCamera.getCenterY()
+				);
+			}
 		}
 
-
+		@Override
+		public void onTouchEvent(MotionEvent event) {
+			super.onTouchEvent(event);
+		}
 
 	}
 
